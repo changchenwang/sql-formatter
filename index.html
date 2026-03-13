@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL格式化工具</title>
+<style>
+:root{--bg:#f8fafc;--card:#fff;--text:#1e293b;--border:#e2e8f0;--outbg:#1e293b;--outtx:#e2e8f0;--ph:#94a3b8;--kw:#7c3aed;--fn:#0891b2;--str:#059669;--num:#dc2626;--op:#ea580c;--err-bg:#fef2f2;--err-border:#fecaca;--err-color:#dc2626;--btn-bg:#f1f5f9;--btn-hover:#e2e8f0}
+[data-theme="dark"]{--bg:#0f172a;--card:#1e293b;--text:#f1f5f9;--border:#334155;--outbg:#0f172a;--outtx:#e2e8f0;--ph:#64748b;--kw:#a78bfa;--fn:#22d3ee;--str:#34d399;--num:#f87171;--op:#fb923c;--err-bg:#450a0a;--err-border:#7f1d1d;--err-color:#fca5a5;--btn-bg:#334155;--btn-hover:#475569}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:1rem;transition:background .3s,color .3s}
+.wrap{max-width:1400px;margin:0 auto}
+h1{text-align:center;margin-bottom:1rem;font-weight:600}
+.bar{display:flex;gap:0.5rem;flex-wrap:wrap;padding:0.75rem;background:var(--card);border-radius:8px;margin-bottom:1rem;align-items:center}
+.btn{padding:0.4rem 0.75rem;border:none;border-radius:6px;cursor:pointer;background:var(--btn-bg);color:var(--text);font-size:0.875rem;transition:background .2s}
+.btn:hover{background:var(--btn-hover)}
+.btn-pri{background:#2563eb;color:#fff}
+.btn-pri:hover{background:#1d4ed8}
+.btn-icon{padding:0.4rem 0.6rem;font-size:1rem}
+.grp{display:flex;gap:0.25rem;align-items:center}
+.grp label{font-size:0.75rem;color:var(--ph)}
+select{padding:0.3rem;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--text)}
+.main{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:800px){.main{grid-template-columns:1fr}}
+.panel{background:var(--card);border-radius:8px;overflow:hidden}
+.phead{padding:0.75rem 1rem;border-bottom:1px solid var(--border);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+textarea{width:100%;min-height:400px;padding:1rem;border:none;resize:none;font-family:'Fira Code','Consolas',monospace;font-size:13px;background:var(--card);color:var(--text);line-height:1.5}
+.outbox{background:var(--outbg);min-height:400px;overflow:auto}
+pre{color:var(--outtx);padding:1rem;font-family:'Fira Code','Consolas',monospace;font-size:13px;margin:0;white-space:pre-wrap;line-height:1.5}
+.pfoot{padding:0.5rem 1rem;border-top:1px solid var(--border);font-size:0.75rem;color:var(--ph)}
+.kw{color:var(--kw)}.fn{color:var(--fn)}.str{color:var(--str)}.num{color:var(--num)}.op{color:var(--op)}.cm{color:var(--ph);font-style:italic}.sub{color:#f59e0b}
+.hint{display:flex;align-items:center;gap:0.25rem;font-size:0.8rem}
+.error-box{padding:0.5rem 1rem;background:var(--err-bg);border-top:1px solid var(--err-border);color:var(--err-color);font-size:0.8rem;display:none}
+.error-box.show{display:block}
+.error-box .err-item{display:flex;gap:0.5rem;margin-bottom:0.25rem}
+.error-box .err-item:last-child{margin-bottom:0}
+.toolbar-right{margin-left:auto;display:flex;gap:0.5rem;align-items:center}
+.shortcut-hint{color:var(--ph);font-size:0.75rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+    <h1>SQL 格式化工具</h1>
+    <div class="bar">
+        <button class="btn btn-pri" onclick="formatSQL()" title="格式化 (Ctrl+Enter)">格式化</button>
+        <button class="btn" onclick="clearAll()" title="清空">清空</button>
+        <button class="btn" onclick="copyResult()" title="复制结果 (Ctrl+Shift+C)">复制</button>
+        <button class="btn" onclick="document.getElementById('fileInput').click()" title="导入SQL文件">导入</button>
+        <button class="btn" onclick="exportFile()" title="导出SQL文件">导出</button>
+        <input type="file" id="fileInput" accept=".sql,.txt" onchange="importFile(event)" style="display:none">
+        <div class="grp"><label>关键字</label><select id="keywordCase" onchange="formatSQL()"><option value="upper">大写</option><option value="lower">小写</option><option value="preserve">保持</option></select></div>
+        <div class="grp"><label>缩进</label><select id="indentSize" onchange="formatSQL()"><option value="4">4空格</option><option value="2">2空格</option></select></div>
+        <div class="toolbar-right">
+            <button class="btn btn-icon" onclick="toggleTheme()" title="切换主题" id="themeBtn">🌙</button>
+            <span class="shortcut-hint">Ctrl+Enter 格式化</span>
+        </div>
+    </div>
+    <div class="main">
+        <div class="panel">
+            <div class="phead">
+                输入 SQL
+                <label class="hint"><input type="checkbox" id="autoFormat" onchange="toggleAutoFormat()"> 自动格式化</label>
+            </div>
+            <textarea id="input" placeholder="在此粘贴SQL语句...&#10;示例: SELECT * FROM users WHERE id > 0"></textarea>
+            <div class="error-box" id="errorMsg"></div>
+            <div class="pfoot" id="inputCount">0 字符</div>
+        </div>
+        <div class="panel">
+            <div class="phead">
+                格式化结果
+                <label class="hint"><input type="checkbox" id="highlightOn" checked onchange="formatSQL()">高亮</label>
+            </div>
+            <div class="outbox"><pre id="output"></pre></div>
+            <div class="pfoot" id="outputCount">0 行</div>
+        </div>
+    </div>
+</div>
+<script>
+const KEYWORDS = new Set(["SELECT","FROM","WHERE","AND","OR","NOT","IN","LIKE","BETWEEN","IS","NULL","JOIN","INNER","LEFT","RIGHT","OUTER","FULL","CROSS","ON","USING","GROUP","BY","HAVING","ORDER","ASC","DESC","LIMIT","OFFSET","FETCH","ROWS","INSERT","INTO","VALUES","UPDATE","SET","DELETE","CREATE","ALTER","DROP","TABLE","INDEX","VIEW","UNION","INTERSECT","EXCEPT","ALL","DISTINCT","AS","CASE","WHEN","THEN","ELSE","END","EXISTS","WITH","BEGIN","COMMIT","ROLLBACK","IF","ELSEIF","END IF","LOOP","END LOOP","WHILE","END WHILE","RETURN","CALL","PRIMARY","KEY","FOREIGN","REFERENCES","CONSTRAINT","DEFAULT","CHECK","UNIQUE","AUTO_INCREMENT","SERIAL","COMMENT","TABLESPACE","STORED","VIRTUAL","GENERATED","OVER","PARTITION","WINDOW","RANGE","PRECEDING","FOLLOWING","CURRENT","ROW","UNBOUNDED","FIRST","LAST","AFTER","BEFORE","EACH","RECORD","INSTEAD","OF","TRIGGER","FUNCTION","PROCEDURE","PACKAGE","BODY","DECLARE","CURSOR","EXCEPTION","RAISE","PRAGMA","SAVEPOINT","RELEASE","LOCK","UNLOCK","GRANT","REVOKE","CASCADE","RESTRICT","NOACTION","DEFERRABLE","INITIALLY","DEFERRED","IMMEDIATE","NATURAL","COLLATE","COLLATION","TEMPORARY","TEMP","UNLOGGED","REPLACE","ABORT","FAIL","IGNORE","REINDEX","VACUUM","ANALYZE","ATTACH","DETACH","DATABASE","SCHEMA","DATABASES","ENGINE","CHARSET","ROWID","RANDOM","HEX","QUOTE","TYPE","CAST","COLUMN","COLUMNS","REGEXP","GLOB","MATCH","NOTHING","RETURNING","STRAIGHT_JOIN","SQL_BIG_RESULT","SQL_SMALL_RESULT","HIGH_PRIORITY","LOW_PRIORITY","DELAYED","SQL_CACHE","SQL_NO_CACHE","SQL_CALC_FOUND_ROWS","FOUND_ROWS","ROW_COUNT","GET_LOCK","RELEASE_LOCK","RELEASE_ALL_LOCKS","MASTER_POS_WAIT","ENCLOSED","ESCAPED","TERMINATED","OPTIONALLY","START","SINGLE","BINARY","VARBINARY","JSON","GEOMETRY","POINT","LINESTRING","POLYGON","MULTIPOINT","MULTILINESTRING","MULTIPOLYGON","GEOMETRYCOLLECTION","IDENTITY","SEQUENCE","CYCLE","NO CYCLE","INCREMENT","CACHE","MINVALUE","NOMINVALUE","MAXVALUE","NOMAXVALUE","START WITH","RESTART","ANY","SOME","ESCAPE","ADD","MODIFY","CHANGE","RENAME","TO","ONLY","EXCEPT","MERGE","UPSERT","CONFLICT","DO","ON CONFLICT","ISNULL","NOTNULL","NOT LIKE","IS DISTINCT FROM","IS NOT DISTINCT FROM","SIMILAR","EXTRACT","OVERLAPS","PRECISION","SCALE","NUMERIC","DECIMAL","FLOAT","DOUBLE","REAL","INT","INTEGER","BIGINT","SMALLINT","TINYINT","BOOLEAN","BOOL","DATE","TIME","DATETIME","TIMESTAMP","INTERVAL","TEXT","VARCHAR","CHAR","NCHAR","NVARCHAR","BLOB","CLOB","UUID","ARRAY","ENUM","MONEY","VOID","SESSION","GLOBAL","LOCAL","TRANSACTION","AT","ACTION","INCLUDE","EXCLUDE","TIES","PERCENT","WITHIN","GROUPING","SETS","CUBE","ROLLUP","TOTALS","FILTER","PARTITION BY","NULLS FIRST","NULLS LAST","RESTRICT","MATCHED","RETURNING","CONCURRENTLY","MATERIALIZED","REFRESH","TRUNCATE","BINLOG","DELIMITER","SPATIAL","FULLTEXT","SPATIAL","ENCLOSED","PRECEDING","UNBOUNDED","CURRENT ROW","ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING"]);
+
+const FUNCTIONS = new Set(["COUNT","SUM","AVG","MIN","MAX","COALESCE","NULLIF","CAST","CONVERT","SUBSTRING","SUBSTR","TRIM","UPPER","LOWER","LENGTH","REPLACE","CONCAT","NOW","CURRENT_DATE","CURRENT_TIMESTAMP","DATE","YEAR","MONTH","DAY","HOUR","MINUTE","SECOND","DATEADD","DATEDIFF","GETDATE","SYSDATE","ABS","CEILING","FLOOR","ROUND","SQRT","POWER","MOD","ROW_NUMBER","RANK","DENSE_RANK","NTILE","LAG","LEAD","TO_CHAR","TO_DATE","TO_NUMBER","DATE_FORMAT","IFNULL","IF","NVL","NVL2","GREATEST","LEAST","CONCAT_WS","LPAD","RPAD","LTRIM","RTRIM","INSTR","REGEXP_REPLACE","REGEXP_COUNT","JSON_EXTRACT","JSON_VALUE","JSON_ARRAY","JSON_OBJECT","ROWID","ROWNUM","SYSTIMESTAMP","CURRENT_USER","SESSION_USER","SYSTEM_USER","UTC_DATE","UTC_TIME","UTC_TIMESTAMP","TIMESTAMP","TIMESTAMPDIFF","TIMESTAMPADD","EXTRACT","POSITION","CHAR_LENGTH","CHARACTER_LENGTH","OCTET_LENGTH","BIT_LENGTH","FORMAT","INET_ATON","INET_NTOA","UUID","UUID_SHORT","LAST_INSERT_ID","FOUND_ROWS","BENCHMARK","SLEEP","FIND_IN_SET","FIELD","ELT","INTERVAL","LOG","LOG10","LOG2","EXP","LN","SIGN","POW","RAND","TRUNCATE","CONV","BIN","OCT","BIT_COUNT","ISNULL","GREATEST","LEAST","IFNULL","NULLIF","COALESCE","CONVERT","CAST","SUBSTRING_INDEX","MID","LOCATE","ELT","FIELD","FORMAT","REVERSE","REPEAT","SPACE","STRCMP","SUBTIME","ADDTIME","DATEDIFF","TIMEDIFF","FROM_UNIXTIME","UNIX_TIMESTAMP","STR_TO_DATE","DATE_SUB","DATE_ADD","ADDDATE","SUBDATE","CURDATE","CURTIME","NOW","CURRENT_TIMESTAMP","CURRENT_TIME","CURRENT_DATE","UTC_TIMESTAMP","UTC_DATE","POW","POWER","EXP","LOG","LOG2","LOG10","SQRT","CEIL","CEILING","FLOOR","ROUND","TRUNCATE","ABS","SIGN","MOD","RAND","RANDOM","GREATEST","LEAST","IF","CASEWHEN","NVL2","COALESCE","NULLIF","ASCII","ORD","CHAR","CONCAT","CONCAT_WS","FORMAT","HEX","UNHEX","LEFT","RIGHT","MID","SUBSTRING","SUBSTR","LENGTH","CHAR_LENGTH","CHARACTER_LENGTH","OCTET_LENGTH","BIT_LENGTH","LOCATE","POSITION","INSTR","LPAD","RPAD","LTRIM","RTRIM","TRIM","REPLACE","REPEAT","REVERSE","STRCMP","UCASE","UPPER","LCASE","LOWER","QUOTE","UNQUOTE","JSON_TYPE","JSON_KEYS","JSON_LENGTH","JSON_EXTRACT","JSON_VALUE","JSON_QUERY","JSON_SET","JSON_INSERT","JSON_REPLACE","JSON_REMOVE","JSON_MERGE","JSON_ARRAY","JSON_OBJECT","TO_JSON","FROM_JSON","ARRAY_LENGTH","OBJECT_KEYS","OBJECT_VALUES","RECORD_ID","CURRENT_SCID","NEXTVAL","CURRVAL","LASTVAL","SETVAL","GENERATE_SERIES","UNNEST","ARRAY_POSITION","ARRAY_REPLACE","ARRAY_REMOVE","ARRAY_CONTAINS","ARRAY_DISTINCT","ARRAY_SORT","ARRAY_UPPER","ARRAY_LOWER","ST_X","ST_Y","ST_POINT","ST_DISTANCE","ST_WITHIN","ST_CONTAINS","ST_INTERSECTS","ST_TOUCHES","ST_CROSSES","ST_OVERLAPS","ST_EQUALS","ST_GEOMETRYN","ST_NUMGEOMETRIES","ST_NUMPOINTS","ST_GEOMETRYTYPE","ST_ISVALID","ST_AREA","ST_LENGTH","ST_CENTROID","ST_BOUNDARY","ST_ENVELOPE","ST_CONVEXHULL","ST_SIMPLIFY","ST_DWITHIN","ST_DREWIN","ST_BUFFER","ST_TRANSFORM","ST_SETSRID","ST_SRID","GEOMFROMWKT","ST_GEOMFROMTEXT","ST_POINTFROMTEXT","ST_POLYGONFROMTEXT","ST_LINEFROMTEXT","ASTEXT","ST_ASTEXT","ASWKT","ST_ASWKT","ASBINARY","ST_ASBINARY","ASGEOJSON","ST_ASGEOJSON","GEOJSON","ST_GEOJSON","GEOMETRYTYPE","ST_GEOMETRYTYPE","DIMENSION","ST_DIMENSION","ISEMPTY","ST_ISEMPTY","ISSIMPLE","ST_ISSIMPLE"]);
+
+function escapeHtml(text){
+    return text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function tokenize(sql){
+    const tokens = [];
+    let pos = 0;
+    while(pos < sql.length){
+        const ch = sql.charAt(pos);
+        if(/\s/.test(ch) && ch !== '\n'){
+            let value = "";
+            while(pos < sql.length && /\s/.test(sql.charAt(pos)) && sql.charAt(pos) !== '\n'){
+                value += sql.charAt(pos++);
+            }
+            tokens.push({type: "whitespace", value});
+            continue;
+        }
+        if(ch === '-' && sql.charAt(pos+1) === '-'){
+            let value = "";
+            while(pos < sql.length && sql.charAt(pos) !== '\n') value += sql.charAt(pos++);
+            tokens.push({type: "comment", value});
+            continue;
+        }
+        if(ch === '#'){
+            let value = "";
+            while(pos < sql.length && sql.charAt(pos) !== '\n') value += sql.charAt(pos++);
+            tokens.push({type: "comment", value});
+            continue;
+        }
+        if(ch === '/' && sql.charAt(pos+1) === '*'){
+            let value = "";
+            while(pos < sql.length && !(sql.charAt(pos) === '*' && sql.charAt(pos+1) === '/')){
+                value += sql.charAt(pos++);
+            }
+            value += '*/'; pos += 2;
+            tokens.push({type: "comment", value});
+            continue;
+        }
+        if(ch === '"' || ch === "'" || ch === '`'){
+            const quote = ch;
+            let value = quote;
+            pos++;
+            while(pos < sql.length){
+                if(sql.charAt(pos) === quote && (pos + 1 < sql.length && sql.charAt(pos+1) === quote)){
+                    value += quote + quote;
+                    pos += 2;
+                }else if(sql.charAt(pos) === quote){
+                    value += quote;
+                    pos++;
+                    break;
+                }else{
+                    value += sql.charAt(pos++);
+                }
+            }
+            tokens.push({type: "string", value});
+            continue;
+        }
+        if(ch === '('){
+            let value = "(";
+            pos++;
+            let depth = 1;
+            let inner = "";
+            while(pos < sql.length && depth > 0){
+                const pc = sql.charAt(pos);
+                if(pc === '(') depth++;
+                if(pc === ')') depth--;
+                if(depth > 0) inner += pc;
+                pos++;
+            }
+            value += inner + ")";
+            if(inner.toUpperCase().trim().startsWith("SELECT") || inner.toUpperCase().trim().startsWith("WITH")){
+                tokens.push({type: "subquery", value});
+            }else{
+                tokens.push({type: "punctuation", value});
+            }
+            continue;
+        }
+        if(/[0-9]/.test(ch)){
+            let value = "";
+            while(pos < sql.length && /[0-9.xXa-fA-FeE+-]/.test(sql.charAt(pos))) value += sql.charAt(pos++);
+            tokens.push({type: "number", value});
+            continue;
+        }
+        if(/[a-zA-Z_]/.test(ch)){
+            let value = "";
+            while(pos < sql.length && /[a-zA-Z0-9_]/.test(sql.charAt(pos))) value += sql.charAt(pos++);
+            const upper = value.toUpperCase();
+            let type = "identifier";
+            if(KEYWORDS.has(upper)) type = "keyword";
+            else if(FUNCTIONS.has(upper)) type = "function";
+            tokens.push({type, value});
+            continue;
+        }
+        if('=><!+-\*/%&|^~'.indexOf(ch) >= 0){
+            let value = ch;
+            pos++;
+            if(pos < sql.length && '=<>&|'.indexOf(sql.charAt(pos)) >= 0){
+                value += sql.charAt(pos++);
+            }
+            tokens.push({type: "operator", value});
+            continue;
+        }
+        if('(),;.'.indexOf(ch) >= 0){
+            tokens.push({type: "punctuation", value: ch});
+            pos++;
+            continue;
+        }
+        tokens.push({type: "unknown", value: ch});
+        pos++;
+    }
+    return tokens;
+}
+
+function validateSQL(sql){
+    const errors = [];
+    const tokens = tokenize(sql);
+    const sqlUpper = sql.toUpperCase();
+    
+    let parenCount = 0;
+    for(let i = 0; i < sql.length; i++){
+        if(sql.charAt(i) === '(') parenCount++;
+        if(sql.charAt(i) === ')') parenCount--;
+        if(parenCount < 0){
+            errors.push("括号不匹配：存在多余的闭括号");
+            break;
+        }
+    }
+    if(parenCount > 0){
+        errors.push(`括号不匹配：存在未闭合的左括号 (，缺少 ${parenCount} 个 )`);
+    }
+    
+    let selectCount = 0, fromCount = 0, whereCount = 0, joinCount = 0;
+    for(const t of tokens){
+        if(t.type === "keyword"){
+            const kw = t.value.toUpperCase();
+            if(kw === "SELECT") selectCount++;
+            if(kw === "FROM") fromCount++;
+            if(kw === "WHERE") whereCount++;
+            if(["JOIN","INNER","LEFT","RIGHT","FULL","CROSS","OUTER"].includes(kw)) joinCount++;
+        }
+    }
+    
+    if(selectCount > 0 && fromCount === 0){
+        errors.push("语法错误：存在 SELECT 但缺少 FROM");
+    }
+    if(fromCount > selectCount){
+        errors.push("语法错误：FROM 数量多于 SELECT");
+    }
+    if(whereCount > 1){
+        errors.push("语法错误：存在多个 WHERE 子句");
+    }
+    
+    const levenshtein = (a, b) => {
+        if(a.length === 0) return b.length;
+        if(b.length === 0) return a.length;
+        const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(0));
+        for(let i = 0; i <= b.length; i++) matrix[i][0] = i;
+        for(let j = 0; j <= a.length; j++) matrix[0][j] = j;
+        for(let i = 1; i <= b.length; i++){
+            for(let j = 1; j <= a.length; j++){
+                if(b.charAt(i-1) === a.charAt(j-1)){
+                    matrix[i][j] = matrix[i-1][j-1];
+                }else{
+                    matrix[i][j] = Math.min(matrix[i-1][j-1] + 1, matrix[i][j-1] + 1, matrix[i-1][j] + 1);
+                }
+            }
+        }
+        return matrix[b.length][a.length];
+    };
+    
+    const typoMap = {
+        "SELEC": "SELECT", "SELE": "SELECT", "SELCT": "SELECT", "SLCT": "SELECT",
+        "FRO": "FROM", "FORM": "FROM", "FRM": "FROM", "FROMM": "FROM",
+        "WHER": "WHERE", "WHRE": "WHERE", "WHRR": "WHERE", "WHEE": "WHERE", "WHE": "WHERE",
+        "ORDE": "ORDER", "ORER": "ORDER", "ORBY": "ORDER BY", "ODER": "ORDER",
+        "GRUP": "GROUP", "GRPY": "GROUP BY", "GROP": "GROUP", "GOURP": "GROUP",
+        "HAVNG": "HAVING", "HAVVING": "HAVING", "HAVIN": "HAVING", "HAVN": "HAVING",
+        "LIMT": "LIMIT", "LMT": "LIMIT", "LIMTI": "LIMIT", "LMIIT": "LIMIT",
+        "OFSET": "OFFSET", "OFFET": "OFFSET", "OFFST": "OFFSET", "OSET": "OFFSET",
+        "INNER": "INNER", "INNR": "INNER", "INER": "INNER",
+        "LEFT": "LEFT", "LEET": "LEFT", "LEF": "LEFT",
+        "RIGHT": "RIGHT", "RIHGT": "RIGHT", "RIGH": "RIGHT",
+        "JOIN": "JOIN", "JOI": "JOIN", "JION": "JOIN", "JOON": "JOIN",
+        "UNION": "UNION", "UNIO": "UNION", "UNIONN": "UNION",
+        "AND": "AND", "ADN": "AND", "AD": "AND", "NAD": "AND",
+        "OR": "OR", "RO": "OR", "O": "OR",
+        "NOT": "NOT", "NTO": "NOT", "ONT": "NOT",
+        "IN": "IN", "NI": "IN",
+        "IS": "IS", "SI": "IS",
+        "NULL": "NULL", "NUL": "NULL", "NLL": "NULL",
+        "AS": "AS", "SA": "AS",
+        "ON": "ON", "NO": "ON",
+        "USING": "USING", "USIGN": "USING", "USIING": "USING",
+        "CASE": "CASE", "CACE": "CASE", "CAES": "CASE",
+        "WHEN": "WHEN", "WHNE": "WHEN", "WHNE": "WHEN",
+        "THEN": "THEN", "TEHN": "THEN", "THNE": "THEN",
+        "ELSE": "ELSE", "ESLE": "ELSE", "LEES": "ELSE",
+        "END": "END", "NED": "END",
+        "INSERT": "INSERT", "INSRT": "INSERT", "INERT": "INSERT",
+        "INTO": "INTO", "INOT": "INTO", "TON": "INTO",
+        "VALUES": "VALUES", "VALUSE": "VALUES", "VALUE": "VALUES",
+        "UPDATE": "UPDATE", "UPDTE": "UPDATE", "UPADTE": "UPDATE",
+        "DELETE": "DELETE", "DELET": "DELETE", "DELTE": "DELETE",
+        "CREATE": "CREATE", "CREAT": "CREATE", "CRAETE": "CREATE",
+        "ALTER": "ALTER", "ALTR": "ALTER", "ATLER": "ALTER",
+        "DROP": "DROP", "DORP": "DROP", "DRPO": "DROP",
+        "TABLE": "TABLE", "TABEL": "TABLE", "TABLe": "TABLE",
+        "INDEX": "INDEX", "INDXE": "INDEX", "INXED": "INDEX",
+        "VIEW": "VIEW", "VEIW": "VIEW", "VIWE": "VIEW",
+        "DISTINCT": "DISTINCT", "DISTINC": "DISTINCT", "DISTNICT": "DISTINCT",
+        "EXISTS": "EXISTS", "EXIST": "EXISTS", "EXSTS": "EXISTS",
+        "WITH": "WITH", "WIT": "WITH", "WTH": "WITH",
+        "BEGIN": "BEGIN", "BEGN": "BEGIN", "BEING": "BEGIN",
+        "COMMIT": "COMMIT", "COMIT": "COMMIT", "COMITT": "COMMIT",
+        "ROLLBACK": "ROLLBACK", "ROLBACK": "ROLLBACK", "ROOLBACK": "ROLLBACK",
+        "ASC": "ASC", "ACS": "ASC",
+        "DESC": "DESC", "DCES": "DESC", "DESCC": "DESC",
+        "FETCH": "FETCH", "FECTH": "FETCH", "FETHC": "FETCH",
+        "UNION": "UNION", "UNIOM": "UNION", "UNINO": "UNION",
+        "ALL": "ALL", "LLA": "ALL",
+        "LIKE": "LIKE", "LIEK": "LIKE", "LKIE": "LIKE",
+        "BETWEEN": "BETWEEN", "BETWEEN": "BETWEEN", "BEETWEEN": "BETWEEN",
+        "COUNT": "COUNT", "COUT": "COUNT", "COUNT": "COUNT",
+        "SUM": "SUM", "SUm": "SUM",
+        "AVG": "AVG", "AVG": "AVG",
+        "MAX": "MAX", "MAx": "MAX",
+        "MIN": "MIN", "MNI": "MIN"
+    };
+    
+    for(const [wrong, correct] of Object.entries(typoMap)){
+        const regex = new RegExp(`\\b${wrong}\\b`, 'gi');
+        if(regex.test(sql) && !sqlUpper.includes(correct)){
+            const alreadyReported = errors.some(e => e.includes(`'${wrong}'`));
+            if(!alreadyReported){
+                errors.push(`可能拼写错误：'${wrong}' 应该是 '${correct}'`);
+            }
+        }
+    }
+    
+    const compoundPatterns = [
+        { pattern: /\bGROUP\s+([A-Z]{1,2})\b/gi, correct: "GROUP BY" },
+        { pattern: /\bORDER\s+([A-Z]{1,2})\b/gi, correct: "ORDER BY" },
+        { pattern: /\bPRIMARY\s+([A-Z]{1,3})\b/gi, correct: "PRIMARY KEY" },
+        { pattern: /\bFOREIGN\s+([A-Z]{1,3})\b/gi, correct: "FOREIGN KEY" }
+    ];
+    
+    for(const cp of compoundPatterns){
+        let m;
+        while((m = cp.pattern.exec(sql)) !== null){
+            const partial = m[1].toUpperCase();
+            if(partial !== "BY" && partial !== "KEY" && partial.length >= 1 && partial.length <= 4){
+                errors.push(`可能拼写错误：'${m[0]}' 应该是 '${cp.correct}'`);
+            }
+        }
+    }
+    
+    const allKeywords = Array.from(KEYWORDS);
+    const commonShortFields = new Set(["ID","A","B","C","X","Y","Z","DB","PK","FK","OK","GO","TO","BY","DO","IF","IN","IS","IT","NO","OF","ON","UP","US","WE","ME","MY","MA","SO","TA","TI","TE","TF","TV","TN","TP","TS","TT","AT","AS","BE","HE","HI","HO","HU","JA","JO","KA","KE","KI","KN","KS","LA","LE","LI","LO","LU","MI","MO","MU","NE","NU","PA","PE","PI","PO","PU","RE","RI","RO","RU","SE","SI","SU","TE","TI","TO","TU","UE","UI","UO","UU","VE","VI","VO","VU","WE","WI","WO","WU","XE","XI","XO","XU","YE","YI","YO","YU","ZE","ZI","ZO","ZU"]);
+    const twoCharKeywordTypos = {"AN":"AND","OD":"OR","NT":"NOT","IN":"IN","NI":"IN","IS":"IS","SI":"IS","OF":"OF","FO":"OF","TO":"TO","OT":"TO","ON":"ON","NO":"ON","AS":"AS","SA":"AS","AT":"AT","TA":"AT","BY":"BY","YB":"BY","IN":"IN","NI":"IN","DO":"DO","OD":"DO","IF":"IF","FI":"IF"};
+    
+    for(const t of tokens){
+        if(t.type === "identifier" && t.value.length >= 2){
+            let parenDepth = 0;
+            let inParen = false;
+            for(const tk of tokens){
+                if(tk.value === t.value) break;
+                if(tk.value === '(') parenDepth++;
+                if(tk.value === ')') parenDepth--;
+                if(parenDepth > 0) inParen = true;
+            }
+            if(inParen) continue;
+            
+            const tvUpper = t.value.toUpperCase();
+            if(KEYWORDS.has(tvUpper) || FUNCTIONS.has(tvUpper)) continue;
+            if(commonShortFields.has(tvUpper)) continue;
+            
+            if(t.value.length === 2 && twoCharKeywordTypos[tvUpper]){
+                const correct = twoCharKeywordTypos[tvUpper];
+                const alreadyReported = errors.some(e => e.includes(`'${t.value}'`));
+                if(!alreadyReported){
+                    errors.push(`可能拼写错误：'${t.value}' 应该是 '${correct}'`);
+                }
+                continue;
+            }
+            
+            if(t.value.length >= 3){
+                for(const kw of allKeywords){
+                    const dist = levenshtein(tvUpper, kw);
+                    if(dist > 0 && dist <= 2){
+                        const alreadyReported = errors.some(e => e.includes(`'${t.value}'`));
+                        if(!alreadyReported){
+                            errors.push(`可能拼写错误：'${t.value}' 应该是 '${kw}'`);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    const spacePattern = /([a-zA-Z_][a-zA-Z0-9_]*)\s+([a-zA-Z_][a-zA-Z0-9_]*)/g;
+    let match;
+    while((match = spacePattern.exec(sql)) !== null){
+        const w1 = match[1].toUpperCase();
+        const w2 = match[2].toUpperCase();
+        if(!KEYWORDS.has(w1) && !FUNCTIONS.has(w1) && !KEYWORDS.has(w2) && !FUNCTIONS.has(w2)){
+            if(w1 !== w2 && !/^\d+$/.test(w2) && w1.length >= 2 && w2.length >= 2){
+                const diff = Math.abs(w1.length - w2.length);
+                if(diff <= 2){
+                    const alreadyReported = errors.some(e => e.includes(`'${match[1]} ${match[2]}'`));
+                    if(!alreadyReported){
+                        errors.push(`可能字段书写错误：'${match[1]} ${match[2]}'，是否应该是'${match[1]}_${match[2]}'?`);
+                    }
+                }
+            }
+        }
+    }
+    
+    const functionNames = ["COUNT","SUM","AVG","MIN","MAX","DATE_FORMAT","ROUND","SUBSTRING","CONCAT","IFNULL","COALESCE","IF","CASE","WHEN","CAST","CONVERT","SUBSTR","TRIM","UPPER","LOWER","LENGTH","REPLACE","NOW","CURRENT_DATE","CURRENT_TIMESTAMP"];
+    for(const fn of functionNames){
+        const regex = new RegExp(`${fn}\\s*\\(`, 'gi');
+        const matches = sql.match(regex);
+        if(matches){
+            for(const match of matches){
+                const parenIdx = sql.indexOf(match);
+                const openParen = sql.indexOf("(", parenIdx);
+                let closeParen = -1;
+                let depth = 0;
+                for(let j = openParen; j < sql.length; j++){
+                    if(sql.charAt(j) === '(') depth++;
+                    if(sql.charAt(j) === ')'){
+                        depth--;
+                        if(depth === 0){
+                            closeParen = j;
+                            break;
+                        }
+                    }
+                }
+                if(closeParen === -1){
+                    errors.push(`函数 ${fn} 括号未闭合`);
+                    break;
+                }
+            }
+        }
+    }
+    
+    const uniqueErrors = [];
+    const seenErrors = new Set();
+    for(const err of errors){
+        const normalized = err.toLowerCase().replace(/'/g, '').replace(/\s+/g, ' ').trim();
+        if(!seenErrors.has(normalized)){
+            seenErrors.add(normalized);
+            uniqueErrors.push(err);
+        }
+    }
+    return uniqueErrors;
+}
+
+function formatSQL(){
+    const input = document.getElementById("input").value;
+    const output = document.getElementById("output");
+    const errorMsg = document.getElementById("errorMsg");
+    
+    const errors = validateSQL(input);
+    if(errors.length > 0){
+        errorMsg.classList.add('show');
+        errorMsg.innerHTML = errors.map(e => `<div class="err-item"><span>⚠️</span><span>${e}</span></div>`).join('');
+    }else{
+        errorMsg.classList.remove('show');
+        errorMsg.innerHTML = '';
+    }
+    
+    if(!input.trim()){
+        output.innerHTML = '<span style="color:var(--ph)">格式化结果将显示在这里...</span>';
+        document.getElementById("outputCount").innerText = "0 行";
+        document.getElementById("inputCount").innerText = "0 字符";
+        return;
+    }
+    
+    const keywordCase = document.getElementById("keywordCase").value;
+    const indentSize = parseInt(document.getElementById("indentSize").value);
+    const indentStr = " ".repeat(indentSize);
+    let sql = input.trim().replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+    
+    const fixTypos = s => {
+        const patterns = [
+            [/\bFRO\b/gi, "FROM"], [/\bWHER\b/gi, "WHERE"], [/\bWHRE\b/gi, "WHERE"],
+            [/\bORDE\b/gi, "ORDER"], [/\bORBY\b/gi, "ORDER BY"], [/\bGRUP\s+BY\b/gi, "GROUP BY"],
+            [/\bGRUP\b/gi, "GROUP"], [/\bHAVNG\b/gi, "HAVING"], [/\bLIMT\b/gi, "LIMIT"],
+            [/\bOFSET\b/gi, "OFFSET"], [/\bSELEC\b/gi, "SELECT"]
+        ];
+        return patterns.reduce((acc, [p, r]) => acc.replace(p, r), s);
+    };
+    sql = fixTypos(sql);
+    
+    const tokens = tokenize(sql);
+    
+    const kw = v => {
+        if(keywordCase === "upper") return v.toUpperCase();
+        if(keywordCase === "lower") return v.toLowerCase();
+        return v;
+    };
+    
+    const toText = toks => {
+        return toks.map(t => {
+            if(t.type === "keyword" || t.type === "function"){
+                return kw(t.value);
+            }
+            return t.value;
+        }).join('').trim();
+    };
+    
+    const result = [];
+    let selectFields = [];
+    let buf = [];
+    let i = 0;
+    let clause = "start";
+    let indentLevel = 0;
+    
+    const flushBuffer = (isSelectField) => {
+        if(buf.length === 0) return;
+        const txt = toText(buf);
+        if(txt){
+            if(isSelectField){
+                selectFields.push(txt);
+            }else{
+                result.push(indentStr.repeat(indentLevel) + txt);
+            }
+        }
+        buf = [];
+    };
+    
+    const outputSelectFields = () => {
+        for(const f of selectFields){
+            result.push(indentStr.repeat(1) + f);
+        }
+        selectFields = [];
+    };
+    
+    while(i < tokens.length){
+        const tok = tokens[i];
+        if(tok.type === "whitespace"){i++; continue;}
+        
+        if(tok.type === "comment"){
+            flushBuffer(false);
+            result.push(indentStr.repeat(indentLevel) + tok.value.trim());
+            i++; continue;
+        }
+        
+        const upper = tok.type === "keyword" ? tok.value.toUpperCase() : "";
+        
+        if(upper === "SELECT"){
+            flushBuffer(false);
+            result.push(kw("SELECT"));
+            clause = "select";
+            indentLevel = 0;
+        }else if(upper === "FROM"){
+            if(clause === "select" && buf.length > 0){
+                flushBuffer(true);
+            }else{
+                flushBuffer(false);
+            }
+            outputSelectFields();
+            result.push(kw("FROM"));
+            clause = "from";
+            indentLevel = 1;
+        }else if(upper === "WHERE"){
+            flushBuffer(false);
+            outputSelectFields();
+            result.push(kw("WHERE"));
+            clause = "where";
+            indentLevel = 1;
+        }else if(upper === "AND" || upper === "OR"){
+            flushBuffer(false);
+            buf.push({type:"whitespace", value:" "});
+            buf.push({type:"keyword", value:kw(upper)});
+            indentLevel = 1;
+        }else if(upper === "GROUP"){
+            flushBuffer(false);
+            outputSelectFields();
+            buf.push({type:"keyword", value:"GROUP"});
+            clause = "groupby";
+            indentLevel = 0;
+        }else if(upper === "HAVING"){
+            flushBuffer(false);
+            result.push(kw("HAVING"));
+            clause = "having";
+            indentLevel = 1;
+        }else if(upper === "CASE"){
+            flushBuffer(false);
+            buf.push({type:"keyword", value:kw(upper)});
+            clause = "case";
+            indentLevel = 0;
+        }else if(upper === "WHEN" && clause === "case"){
+            flushBuffer(false);
+            indentLevel = 1;
+            buf.push({type:"keyword", value:kw(upper)});
+        }else if(upper === "THEN" && clause === "case"){
+            flushBuffer(false);
+            buf.push({type:"keyword", value:kw(upper)});
+        }else if(upper === "ELSE" && clause === "case"){
+            flushBuffer(false);
+            result.push(indentStr.repeat(indentLevel) + kw("ELSE"));
+            buf = [];
+        }else if(upper === "END" && clause === "case"){
+            flushBuffer(false);
+            buf.push({type:"keyword", value:kw(upper)});
+            flushBuffer(false);
+            clause = "select";
+        }else if(upper === "ORDER"){
+            flushBuffer(false);
+            outputSelectFields();
+            buf.push({type:"keyword", value:"ORDER"});
+            clause = "orderby";
+            indentLevel = 0;
+        }else if(upper === "BY" && (clause === "groupby" || clause === "orderby")){
+            buf.push({type:"whitespace", value:" "});
+            buf.push(tok);
+            indentLevel = 0;
+            flushBuffer(false);
+            indentLevel = 1;
+        }else if(upper === "LIMIT" || upper === "OFFSET"){
+            flushBuffer(false);
+            buf.push({type:"keyword", value:kw(upper)});
+            clause = "limit";
+            indentLevel = 0;
+        }else if(["JOIN","INNER","LEFT","RIGHT","FULL","CROSS","OUTER"].includes(upper)){
+            flushBuffer(false);
+            if(upper === "JOIN"){
+                result.push(indentStr.repeat(0) + kw(upper));
+                clause = "join";
+                indentLevel = 1;
+            }else{
+                buf.push(tok);
+            }
+        }else if(upper === "ON" || upper === "USING"){
+            flushBuffer(false);
+            result.push(indentStr.repeat(indentLevel) + kw(upper));
+            indentLevel = 2;
+        }else if(tok.value === ","){
+            let parenDepth = 0;
+            for(const b of buf){if(b.value === '(') parenDepth++; if(b.value === ')') parenDepth--;}
+            if(parenDepth > 0){
+                buf.push(tok);
+            }else if(clause === "select"){
+                buf.push(tok);
+                flushBuffer(true);
+            }else if(clause === "groupby" || clause === "orderby"){
+                buf.push(tok);
+                flushBuffer(false);
+            }else{
+                buf.push(tok);
+            }
+        }else{
+            if(buf.length > 0 && tok.type !== "whitespace"){
+                const last = buf[buf.length-1];
+                if(last.type !== "whitespace" && tok.type !== "punctuation"){
+                    buf.push({type:"whitespace", value:" "});
+                }
+            }
+            buf.push(tok);
+        }
+        i++;
+    }
+    
+    flushBuffer(false);
+    outputSelectFields();
+    
+    let formatted = result.join("\n");
+    formatted = formatted.replace(/\n{3,}/g,"\n\n");
+    
+    if(document.getElementById("highlightOn").checked){
+        let html = "";
+        const outTokens = tokenize(formatted);
+        for(const t of outTokens){
+            let val = escapeHtml(t.value);
+            if(t.type === "keyword") val = `<span class="kw">${val}</span>`;
+            else if(t.type === "function") val = `<span class="fn">${val}</span>`;
+            else if(t.type === "string") val = `<span class="str">${val}</span>`;
+            else if(t.type === "number") val = `<span class="num">${val}</span>`;
+            else if(t.type === "operator") val = `<span class="op">${val}</span>`;
+            else if(t.type === "comment") val = `<span class="cm">${val}</span>`;
+            else if(t.type === "subquery") val = `<span class="sub">${val}</span>`;
+            html += val;
+        }
+        output.innerHTML = html;
+    }else{
+        output.textContent = formatted;
+    }
+    document.getElementById("outputCount").innerText = `${formatted.split("\n").length} 行`;
+    document.getElementById("inputCount").innerText = `${input.length} 字符`;
+}
+
+function clearAll(){
+    document.getElementById("input").value = "";
+    document.getElementById("output").innerHTML = '<span style="color:var(--ph)">格式化结果将显示在这里...</span>';
+    document.getElementById("inputCount").innerText = "0 字符";
+    document.getElementById("outputCount").innerText = "0 行";
+    document.getElementById("errorMsg").classList.remove('show');
+}
+
+function copyResult(){
+    const text = document.getElementById("output").textContent;
+    if(text && !text.includes("格式化结果将显示")){
+        navigator.clipboard.writeText(text).then(() => {
+            showToast("已复制!");
+        }).catch(() => {
+            showToast("复制失败", true);
+        });
+    }
+}
+
+function showToast(msg, isError = false){
+    const toast = document.createElement('div');
+    toast.style.cssText = `position:fixed;bottom:20px;right:20px;background:${isError?'#dc2626':'#059669'};color:#fff;padding:8px 16px;border-radius:6px;font-size:14px;z-index:1000;animation:fadeIn .3s`;
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+}
+
+function importFile(event){
+    const file = event.target.files[0];
+    if(!file) return;
+    try{
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById("input").value = e.target.result;
+            formatSQL();
+            showToast("文件导入成功");
+        };
+        reader.onerror = () => showToast("文件读取失败", true);
+        reader.readAsText(file);
+    }catch(e){
+        showToast("文件导入失败", true);
+    }
+    event.target.value = "";
+}
+
+function exportFile(){
+    const text = document.getElementById("output").textContent;
+    if(text && !text.includes("格式化结果将显示")){
+        try{
+            const blob = new Blob([text], {type:"text/plain;charset=utf-8"});
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "formatted_sql.sql";
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast("文件导出成功");
+        }catch(e){
+            showToast("文件导出失败", true);
+        }
+    }
+}
+
+function toggleTheme(){
+    const html = document.documentElement;
+    const isDark = html.getAttribute("data-theme") === "dark";
+    html.setAttribute("data-theme", isDark ? "light" : "dark");
+    document.getElementById("themeBtn").textContent = isDark ? "🌙" : "☀️";
+    localStorage.setItem("sql-theme", isDark ? "light" : "dark");
+}
+
+function toggleAutoFormat(){
+    const enabled = document.getElementById("autoFormat").checked;
+    localStorage.setItem("sql-autoformat", enabled);
+}
+
+document.getElementById("input").addEventListener("input", e => {
+    document.getElementById("inputCount").innerText = `${e.target.value.length} 字符`;
+    if(document.getElementById("autoFormat").checked && e.target.value.trim()){
+        clearTimeout(window.formatTimer);
+        window.formatTimer = setTimeout(formatSQL, 500);
+    }
+});
+
+document.addEventListener("keydown", e => {
+    if(e.ctrlKey && e.key === "Enter"){
+        e.preventDefault();
+        formatSQL();
+    }
+    if(e.ctrlKey && e.shiftKey && e.key === "C"){
+        e.preventDefault();
+        copyResult();
+    }
+});
+
+document.getElementById("output").innerHTML = '<span style="color:var(--ph)">格式化结果将显示在这里...</span>';
+
+const savedTheme = localStorage.getItem("sql-theme");
+if(savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)){
+    document.documentElement.setAttribute("data-theme", "dark");
+    document.getElementById("themeBtn").textContent = "☀️";
+}
+
+const savedAutoFormat = localStorage.getItem("sql-autoformat");
+if(savedAutoFormat === "true"){
+    document.getElementById("autoFormat").checked = true;
+}
+</script>
+</body>
+</html>
