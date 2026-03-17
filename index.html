@@ -36,13 +36,73 @@ pre{color:var(--outtx);padding:1rem;font-family:'Fira Code','Consolas',monospace
 .error-box .err-item:last-child{margin-bottom:0}
 .toolbar-right{margin-left:auto;display:flex;gap:0.5rem;align-items:center}
 .shortcut-hint{color:var(--ph);font-size:0.75rem}
+.db-modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;justify-content:center;align-items:center;z-index:100}
+.db-modal.show{display:flex}
+.db-modal-content{background:var(--card);padding:1.5rem;border-radius:12px;width:90%;max-width:400px}
+.db-modal h2{margin-bottom:1rem}
+.db-form{display:flex;flex-direction:column;gap:0.75rem}
+.db-form input,.db-form select{padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text)}
+.db-form .btn-row{display:flex;gap:0.5rem;margin-top:0.5rem}
+.db-form button{flex:1;padding:0.5rem;border:none;border-radius:6px;cursor:pointer}
+.db-conn-info{font-size:0.8rem;color:var(--ph);margin-top:0.5rem;padding:0.5rem;background:var(--bg);border-radius:4px}
+.analyze-panel{display:none;margin-top:1rem;background:var(--card);border-radius:8px;overflow:hidden}
+.analyze-panel.show{display:block}
+.analyze-header{padding:0.75rem 1rem;border-bottom:1px solid var(--border);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.analyze-content{max-height:500px;overflow:auto}
+.suggestion-item{padding:0.75rem 1rem;border-bottom:1px solid var(--border)}
+.suggestion-item:last-child{border-bottom:none}
+.suggestion-item.warning{border-left:3px solid #f59e0b}
+.suggestion-item.error{border-left:3px solid #dc2626}
+.suggestion-item.success{border-left:3px solid #059669}
+.suggestion-item.info{border-left:3px solid #2563eb}
+.suggestion-item.suggestion{border-left:3px solid #7c3aed}
+.suggestion-title{font-weight:600;margin-bottom:0.25rem}
+.suggestion-message{font-size:0.85rem;color:var(--ph);margin-bottom:0.25rem}
+.suggestion-suggest{font-size:0.85rem;color:#7c3aed;background:var(--bg);padding:0.25rem 0.5rem;border-radius:4px;font-family:monospace}
+.explain-result{padding:0.75rem 1rem;border-bottom:1px solid var(--border);background:var(--outbg)}
+.explain-result pre{font-size:12px;margin:0}
+.index-list{padding:0.75rem 1rem;border-bottom:1px solid var(--border)}
+.index-list h4{margin-bottom:0.5rem;font-size:0.9rem}
+.index-item{font-size:0.8rem;color:var(--ph);padding:0.25rem 0}
+.suggestion-summary{background:var(--card);border-radius:8px;margin-bottom:1rem;overflow:hidden}
+.summary-title{font-weight:600;padding:0.75rem 1rem;background:#f1f5f9;border-bottom:1px solid var(--border)}
+[data-theme="dark"] .summary-title{background:#1e293b}
+.summary-list{padding:0.5rem}
+.summary-item{padding:0.5rem 0.75rem;border-radius:6px;margin-bottom:0.5rem;background:var(--bg)}
+.summary-item:last-child{margin-bottom:0}
+.summary-item.error{background:rgba(220,38,38,0.1);border-left:3px solid #dc2626}
+.summary-item.warning{background:rgba(245,158,11,0.1);border-left:3px solid #f59e0b}
+.summary-item.suggestion{background:rgba(124,58,237,0.1);border-left:3px solid #7c3aed}
+.summary-item.success{background:rgba(5,150,105,0.1);border-left:3px solid #059669}
+.summary-item.info{background:rgba(37,99,235,0.1);border-left:3px solid #2563eb}
+.summary-header{font-weight:600;font-size:0.9rem;margin-bottom:0.25rem}
+.summary-msg{font-size:0.85rem;color:var(--ph)}
+.summary-action{font-size:0.8rem;color:#7c3aed;margin-top:0.5rem;padding:0.5rem;background:var(--card);border-radius:4px}
+.detail-section{margin-bottom:0.75rem;border-radius:8px;overflow:hidden;background:var(--card)}
+.detail-toggle{padding:0.75rem 1rem;cursor:pointer;font-weight:600;background:var(--bg);border-bottom:1px solid var(--border)}
+.detail-toggle:hover{background:var(--btn-hover)}
+.detail-content{padding:0.75rem}
+.detail-content.hidden{display:none}
+.explain-summary{display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.75rem;font-size:0.85rem}
+.badge{padding:0.25rem 0.5rem;border-radius:4px;font-size:0.75rem;font-weight:600}
+.badge-danger{background:#fef2f2;color:#dc2626}
+.badge-success{background:#f0fdf4;color:#16a34a}
+[data-theme="dark"] .badge-danger{background:#450a0a}
+[data-theme="dark"] .badge-success{background:#052e16}
+.explain-json{font-size:11px;background:var(--outbg);padding:0.5rem;border-radius:4px;overflow-x:auto;max-height:200px}
+.index-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.5rem}
+.index-card{background:var(--bg);padding:0.5rem;border-radius:6px}
+.index-name{font-weight:600;font-size:0.85rem;display:block;color:#7c3aed}
+.index-cols{font-size:0.8rem;color:var(--ph)}
+.no-data{font-size:0.85rem;color:var(--ph);font-style:italic}
 </style>
 </head>
 <body>
 <div class="wrap">
-    <h1>SQL 格式化工具</h1>
+    <h1>SQL 格式化工具 <span style="font-size:0.9rem;font-weight:400;color:var(--ph)">+ 优化分析</span></h1>
     <div class="bar">
         <button class="btn btn-pri" onclick="formatSQL()" title="格式化 (Ctrl+Enter)">格式化</button>
+        <button class="btn btn-pri" style="background:#7c3aed" onclick="analyzeSQL()" title="连接数据库分析SQL (Ctrl+Shift+A)">分析SQL</button>
         <button class="btn" onclick="clearAll()" title="清空">清空</button>
         <button class="btn" onclick="copyResult()" title="复制结果 (Ctrl+Shift+C)">复制</button>
         <button class="btn" onclick="document.getElementById('fileInput').click()" title="导入SQL文件">导入</button>
@@ -52,6 +112,7 @@ pre{color:var(--outtx);padding:1rem;font-family:'Fira Code','Consolas',monospace
         <div class="grp"><label>缩进</label><select id="indentSize" onchange="formatSQL()"><option value="4">4空格</option><option value="2">2空格</option></select></div>
         <div class="toolbar-right">
             <button class="btn btn-icon" onclick="toggleTheme()" title="切换主题" id="themeBtn">🌙</button>
+            <button class="btn" style="padding:0.3rem 0.5rem;font-size:0.75rem" onclick="showDbModal()" id="dbStatus">连接数据库</button>
             <span class="shortcut-hint">Ctrl+Enter 格式化</span>
         </div>
     </div>
@@ -74,6 +135,34 @@ pre{color:var(--outtx);padding:1rem;font-family:'Fira Code','Consolas',monospace
             <div class="pfoot" id="outputCount">0 行</div>
         </div>
     </div>
+<div class="db-modal" id="dbModal" onclick="if(event.target===this)hideDbModal()">
+    <div class="db-modal-content">
+        <h2>连接数据库</h2>
+        <div class="db-form">
+            <select id="dbType"><option value="mysql">MySQL</option><option value="postgresql">PostgreSQL</option></select>
+            <input type="text" id="dbHost" placeholder="主机 (localhost)">
+            <input type="number" id="dbPort" placeholder="端口 (3306/5432)">
+            <input type="text" id="dbUser" placeholder="用户名">
+            <input type="password" id="dbPassword" placeholder="密码">
+            <input type="text" id="dbName" placeholder="数据库名">
+            <label style="font-size:0.85rem;display:flex;align-items:center;gap:0.5rem">
+                <input type="checkbox" id="dbRemember"> 记住连接信息
+            </label>
+            <div class="btn-row">
+                <button class="btn btn-pri" onclick="connectDB()">连接</button>
+                <button class="btn" onclick="hideDbModal()">取消</button>
+            </div>
+            <div class="db-conn-info" id="dbInfo"></div>
+        </div>
+    </div>
+</div>
+<div class="analyze-panel" id="analyzePanel">
+    <div class="analyze-header">
+        <span>SQL 优化分析结果</span>
+        <button class="btn" onclick="document.getElementById('analyzePanel').classList.remove('show')">关闭</button>
+    </div>
+    <div class="analyze-content" id="analyzeContent"></div>
+</div>
 </div>
 <script>
 const KEYWORDS = new Set(["SELECT","FROM","WHERE","AND","OR","NOT","IN","LIKE","BETWEEN","IS","NULL","JOIN","INNER","LEFT","RIGHT","OUTER","FULL","CROSS","ON","USING","GROUP","BY","HAVING","ORDER","ASC","DESC","LIMIT","OFFSET","FETCH","ROWS","INSERT","INTO","VALUES","UPDATE","SET","DELETE","CREATE","ALTER","DROP","TABLE","INDEX","VIEW","UNION","INTERSECT","EXCEPT","ALL","DISTINCT","AS","CASE","WHEN","THEN","ELSE","END","EXISTS","WITH","BEGIN","COMMIT","ROLLBACK","IF","ELSEIF","END IF","LOOP","END LOOP","WHILE","END WHILE","RETURN","CALL","PRIMARY","KEY","FOREIGN","REFERENCES","CONSTRAINT","DEFAULT","CHECK","UNIQUE","AUTO_INCREMENT","SERIAL","COMMENT","TABLESPACE","STORED","VIRTUAL","GENERATED","OVER","PARTITION","WINDOW","RANGE","PRECEDING","FOLLOWING","CURRENT","ROW","UNBOUNDED","FIRST","LAST","AFTER","BEFORE","EACH","RECORD","INSTEAD","OF","TRIGGER","FUNCTION","PROCEDURE","PACKAGE","BODY","DECLARE","CURSOR","EXCEPTION","RAISE","PRAGMA","SAVEPOINT","RELEASE","LOCK","UNLOCK","GRANT","REVOKE","CASCADE","RESTRICT","NOACTION","DEFERRABLE","INITIALLY","DEFERRED","IMMEDIATE","NATURAL","COLLATE","COLLATION","TEMPORARY","TEMP","UNLOGGED","REPLACE","ABORT","FAIL","IGNORE","REINDEX","VACUUM","ANALYZE","ATTACH","DETACH","DATABASE","SCHEMA","DATABASES","ENGINE","CHARSET","ROWID","RANDOM","HEX","QUOTE","TYPE","CAST","COLUMN","COLUMNS","REGEXP","GLOB","MATCH","NOTHING","RETURNING","STRAIGHT_JOIN","SQL_BIG_RESULT","SQL_SMALL_RESULT","HIGH_PRIORITY","LOW_PRIORITY","DELAYED","SQL_CACHE","SQL_NO_CACHE","SQL_CALC_FOUND_ROWS","FOUND_ROWS","ROW_COUNT","GET_LOCK","RELEASE_LOCK","RELEASE_ALL_LOCKS","MASTER_POS_WAIT","ENCLOSED","ESCAPED","TERMINATED","OPTIONALLY","START","SINGLE","BINARY","VARBINARY","JSON","GEOMETRY","POINT","LINESTRING","POLYGON","MULTIPOINT","MULTILINESTRING","MULTIPOLYGON","GEOMETRYCOLLECTION","IDENTITY","SEQUENCE","CYCLE","NO CYCLE","INCREMENT","CACHE","MINVALUE","NOMINVALUE","MAXVALUE","NOMAXVALUE","START WITH","RESTART","ANY","SOME","ESCAPE","ADD","MODIFY","CHANGE","RENAME","TO","ONLY","EXCEPT","MERGE","UPSERT","CONFLICT","DO","ON CONFLICT","ISNULL","NOTNULL","NOT LIKE","IS DISTINCT FROM","IS NOT DISTINCT FROM","SIMILAR","EXTRACT","OVERLAPS","PRECISION","SCALE","NUMERIC","DECIMAL","FLOAT","DOUBLE","REAL","INT","INTEGER","BIGINT","SMALLINT","TINYINT","BOOLEAN","BOOL","DATE","TIME","DATETIME","TIMESTAMP","INTERVAL","TEXT","VARCHAR","CHAR","NCHAR","NVARCHAR","BLOB","CLOB","UUID","ARRAY","ENUM","MONEY","VOID","SESSION","GLOBAL","LOCAL","TRANSACTION","AT","ACTION","INCLUDE","EXCLUDE","TIES","PERCENT","WITHIN","GROUPING","SETS","CUBE","ROLLUP","TOTALS","FILTER","PARTITION BY","NULLS FIRST","NULLS LAST","RESTRICT","MATCHED","RETURNING","CONCURRENTLY","MATERIALIZED","REFRESH","TRUNCATE","BINLOG","DELIMITER","SPATIAL","FULLTEXT","SPATIAL","ENCLOSED","PRECEDING","UNBOUNDED","CURRENT ROW","ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING"]);
@@ -232,6 +321,13 @@ function validateSQL(sql){
         errors.push("语法错误：存在多个 WHERE 子句");
     }
     
+    if(fromCount > 0 && whereCount === 0){
+        const hasCondition = /=\s*['"]|>\s*\d|<\s*\d|!=|>=|<=|LIKE\s+['"]|IN\s*\(/i.test(sql);
+        if(hasCondition && !sqlUpper.includes('GROUP BY') && !sqlUpper.includes('ORDER BY')){
+            errors.push("语法警告：检测到条件表达式但缺少 WHERE 子句（如 WHERE user_id = 'xxx'）");
+        }
+    }
+    
     const levenshtein = (a, b) => {
         if(a.length === 0) return b.length;
         if(b.length === 0) return a.length;
@@ -319,6 +415,12 @@ function validateSQL(sql){
         }
     }
     
+    const sqlLower = sql.toLowerCase();
+    let skipNextIdentifiers = false;
+    if(sqlLower.includes("fro") || sqlLower.includes("frm") || sqlLower.includes("wher") || sqlLower.includes("orde") || sqlLower.includes("grup") || sqlLower.includes("limt") || sqlLower.includes("ofset")){
+        skipNextIdentifiers = true;
+    }
+    
     const compoundPatterns = [
         { pattern: /\bGROUP\s+([A-Z]{1,2})\b/gi, correct: "GROUP BY" },
         { pattern: /\bORDER\s+([A-Z]{1,2})\b/gi, correct: "ORDER BY" },
@@ -336,25 +438,106 @@ function validateSQL(sql){
         }
     }
     
+    const commonShortFields = new Set(["A","B","C","X","Y","Z","DB","PK","FK","OK","GO","TO","BY","DO","IF","IN","IS","IT","NO","OF","ON","UP","US","WE","ME","MY","MA","SO","TA","TI","TE","TF","TV","TN","TP","TS","TT","AT","AS","BE","HE","HI","HO","HU","JA","JO","KA","KE","KI","KN","KS","LA","LE","LI","LO","LU","MI","MO","MU","NE","NU","PA","PE","PI","PO","PU","RE","RI","RO","RU","SE","SI","SU","TE","TI","TO","TU","UE","UI","UO","UU","VE","VI","VO","VU","WE","WI","WO","WU","XE","XI","XO","XU","YE","YI","YO","YU","ZE","ZI","ZO","ZU"]);
+    
+    const spacePattern = /([a-zA-Z_][a-zA-Z0-9_]*)\s+([a-zA-Z_][a-zA-Z0-9_]*)/g;
+    let match;
+    const reportedSpaces = new Set();
+    const skipIdentifiers = new Set();
+    while((match = spacePattern.exec(sql)) !== null){
+        const w1 = match[1].toUpperCase();
+        const w2 = match[2].toUpperCase();
+        if(!KEYWORDS.has(w1) && !FUNCTIONS.has(w1) && !KEYWORDS.has(w2) && !commonShortFields.has(w2)){
+            if(w1 !== w2 && !/^\d+$/.test(w2) && w1.length >= 2 && w2.length >= 2){
+                const diff = Math.abs(w1.length - w2.length);
+                if(diff <= 2){
+                    const key = `${match[1]} ${match[2]}`;
+                    if(!reportedSpaces.has(key)){
+                        reportedSpaces.add(key);
+                        skipIdentifiers.add(match[1].toLowerCase());
+                        skipIdentifiers.add(match[2].toLowerCase());
+                        errors.push(`可能字段书写错误：'${match[1]} ${match[2]}'，是否应该是'${match[1]}_${match[2]}'?`);
+                    }
+                }
+            }
+        }
+    }
+    
+    const funcArgPattern = /([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s+([a-zA-Z_][a-zA-Z0-9_]*)/g;
+    while((match = funcArgPattern.exec(sql)) !== null){
+        const w1 = match[2].toUpperCase();
+        const w2 = match[3].toUpperCase();
+        if(!KEYWORDS.has(w1) && !FUNCTIONS.has(w1) && !KEYWORDS.has(w2) && !FUNCTIONS.has(w2) && !commonShortFields.has(w2)){
+            const key = `${match[2]} ${match[3]}`;
+            if(!reportedSpaces.has(key)){
+                reportedSpaces.add(key);
+                errors.push(`函数参数书写错误：'${match[2]} ${match[3]}'，是否应该是'${match[2]}_${match[3]}'?`);
+            }
+        }
+    }
+    
     const allKeywords = Array.from(KEYWORDS);
-    const commonShortFields = new Set(["ID","A","B","C","X","Y","Z","DB","PK","FK","OK","GO","TO","BY","DO","IF","IN","IS","IT","NO","OF","ON","UP","US","WE","ME","MY","MA","SO","TA","TI","TE","TF","TV","TN","TP","TS","TT","AT","AS","BE","HE","HI","HO","HU","JA","JO","KA","KE","KI","KN","KS","LA","LE","LI","LO","LU","MI","MO","MU","NE","NU","PA","PE","PI","PO","PU","RE","RI","RO","RU","SE","SI","SU","TE","TI","TO","TU","UE","UI","UO","UU","VE","VI","VO","VU","WE","WI","WO","WU","XE","XI","XO","XU","YE","YI","YO","YU","ZE","ZI","ZO","ZU"]);
     const twoCharKeywordTypos = {"AN":"AND","OD":"OR","NT":"NOT","IN":"IN","NI":"IN","IS":"IS","SI":"IS","OF":"OF","FO":"OF","TO":"TO","OT":"TO","ON":"ON","NO":"ON","AS":"AS","SA":"AS","AT":"AT","TA":"AT","BY":"BY","YB":"BY","IN":"IN","NI":"IN","DO":"DO","OD":"DO","IF":"IF","FI":"IF"};
     
     for(const t of tokens){
+        if(skipNextIdentifiers && t.type === "identifier"){
+            continue;
+        }
+        if(skipNextIdentifiers && t.type === "keyword"){
+            skipNextIdentifiers = false;
+        }
+        
+        if(skipIdentifiers.has(t.value.toLowerCase())){
+            continue;
+        }
+        
         if(t.type === "identifier" && t.value.length >= 2){
             let parenDepth = 0;
             let inParen = false;
+            let afterFromOrJoin = false;
+            let i = 0;
             for(const tk of tokens){
-                if(tk.value === t.value) break;
+                if(tk.value === t.value && i > 0) break;
+                if(tk.type === "keyword"){
+                    const kw = tk.value.toUpperCase();
+                    if(kw === "FROM" || kw === "JOIN" || kw === "INTO" || kw === "UPDATE"){
+                        afterFromOrJoin = true;
+                    }else if(["SELECT","WHERE","GROUP","ORDER","HAVING","LIMIT","SET","VALUES"].includes(kw)){
+                        afterFromOrJoin = false;
+                    }
+                }
                 if(tk.value === '(') parenDepth++;
                 if(tk.value === ')') parenDepth--;
                 if(parenDepth > 0) inParen = true;
+                i++;
             }
             if(inParen) continue;
+            
+            if(skipNextIdentifiers){
+                skipNextIdentifiers = false;
+                continue;
+            }
+            
+            const currentIdx = tokens.indexOf(t);
+            let skipRest = false;
+            if(currentIdx > 0){
+                const prevTok = tokens[currentIdx - 1];
+                const prevUpper = prevTok.value.toUpperCase();
+                const keywordTypos = ["FRO","FRM","FORM","FRMO","WHER","WHRE","ORDE","ORBY","GRUP","HAVN","LIMT","OFSET","INNR","LEET","RIHGT","JOI","UNIO","ADN","NTO","NUL","CACE","TEHN","ESLE","INOT","DELT","CREAT","ALTR","DORP","TABEL","INDXE","EXIST","WIT","BEGN","COMIT","ROLB","FECH","INSRT","INERT","UPDAT","UPADT","DROPP","SELEC","SELCT","SELE","SLCT","WHRR","WHEE","ORER","GROP","GRPY","HAVVING","LMIIT","OFFET","UNIONN"];
+                if(prevTok.type === "identifier" || prevTok.type === "keyword"){
+                    if(keywordTypos.some(k => levenshtein(prevUpper, k) <= 1)){
+                        skipRest = true;
+                    }
+                }
+            }
+            
+            if(afterFromOrJoin || skipRest) continue;
             
             const tvUpper = t.value.toUpperCase();
             if(KEYWORDS.has(tvUpper) || FUNCTIONS.has(tvUpper)) continue;
             if(commonShortFields.has(tvUpper)) continue;
+            
+            if(skipIdentifiers.has(t.value.toLowerCase())) continue;
             
             if(t.value.length === 2 && twoCharKeywordTypos[tvUpper]){
                 const correct = twoCharKeywordTypos[tvUpper];
@@ -366,6 +549,9 @@ function validateSQL(sql){
             }
             
             if(t.value.length >= 3){
+                if(skipIdentifiers.has(t.value.toLowerCase())){
+                    continue;
+                }
                 for(const kw of allKeywords){
                     const dist = levenshtein(tvUpper, kw);
                     if(dist > 0 && dist <= 2){
@@ -374,24 +560,6 @@ function validateSQL(sql){
                             errors.push(`可能拼写错误：'${t.value}' 应该是 '${kw}'`);
                         }
                         break;
-                    }
-                }
-            }
-        }
-    }
-    
-    const spacePattern = /([a-zA-Z_][a-zA-Z0-9_]*)\s+([a-zA-Z_][a-zA-Z0-9_]*)/g;
-    let match;
-    while((match = spacePattern.exec(sql)) !== null){
-        const w1 = match[1].toUpperCase();
-        const w2 = match[2].toUpperCase();
-        if(!KEYWORDS.has(w1) && !FUNCTIONS.has(w1) && !KEYWORDS.has(w2) && !FUNCTIONS.has(w2)){
-            if(w1 !== w2 && !/^\d+$/.test(w2) && w1.length >= 2 && w2.length >= 2){
-                const diff = Math.abs(w1.length - w2.length);
-                if(diff <= 2){
-                    const alreadyReported = errors.some(e => e.includes(`'${match[1]} ${match[2]}'`));
-                    if(!alreadyReported){
-                        errors.push(`可能字段书写错误：'${match[1]} ${match[2]}'，是否应该是'${match[1]}_${match[2]}'?`);
                     }
                 }
             }
@@ -756,17 +924,6 @@ document.getElementById("input").addEventListener("input", e => {
     }
 });
 
-document.addEventListener("keydown", e => {
-    if(e.ctrlKey && e.key === "Enter"){
-        e.preventDefault();
-        formatSQL();
-    }
-    if(e.ctrlKey && e.shiftKey && e.key === "C"){
-        e.preventDefault();
-        copyResult();
-    }
-});
-
 document.getElementById("output").innerHTML = '<span style="color:var(--ph)">格式化结果将显示在这里...</span>';
 
 const savedTheme = localStorage.getItem("sql-theme");
@@ -779,6 +936,230 @@ const savedAutoFormat = localStorage.getItem("sql-autoformat");
 if(savedAutoFormat === "true"){
     document.getElementById("autoFormat").checked = true;
 }
+
+let dbConnection = null;
+const API_BASE = "http://localhost:3001/api";
+
+function showDbModal(){
+    loadDbConfig();
+    document.getElementById("dbModal").classList.add("show");
+    if(dbConnection){
+        document.getElementById("dbInfo").innerHTML = `✅ 已连接: ${dbConnection.type.toUpperCase()} - ${dbConnection.config.database}`;
+    }else{
+        document.getElementById("dbInfo").innerHTML = "未连接数据库";
+    }
+}
+
+function hideDbModal(){
+    document.getElementById("dbModal").classList.remove("show");
+}
+
+async function connectDB(){
+    const type = document.getElementById("dbType").value;
+    const host = document.getElementById("dbHost").value || "localhost";
+    const port = parseInt(document.getElementById("dbPort").value) || (type === "mysql" ? 3306 : 5432);
+    const user = document.getElementById("dbUser").value;
+    const password = document.getElementById("dbPassword").value;
+    const database = document.getElementById("dbName").value;
+    const remember = document.getElementById("dbRemember").checked;
+    
+    if(!user || !database){
+        showToast("请填写用户名和数据库名", true);
+        return;
+    }
+    
+    if(remember){
+        localStorage.setItem("dbConfig", JSON.stringify({type, host, port, user, database, remember: true}));
+    }else{
+        localStorage.removeItem("dbConfig");
+    }
+    
+    try{
+        const res = await fetch(`${API_BASE}/connect`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({type, config: {host, port, user, password, database}})
+        });
+        const data = await res.json();
+        if(data.success){
+            dbConnection = {type, connectionId: data.connectionId, config: {host, port, user, password, database}};
+            document.getElementById("dbStatus").textContent = `✅ ${type.toUpperCase()}:${database}`;
+            document.getElementById("dbInfo").innerHTML = `✅ 连接成功: ${type.toUpperCase()} - ${database}`;
+            showToast("数据库连接成功");
+            hideDbModal();
+        }else{
+            showToast(data.error || "连接失败", true);
+        }
+    }catch(e){
+        showToast("无法连接服务器，请确保后端已启动", true);
+    }
+}
+
+function loadDbConfig(){
+    const saved = localStorage.getItem("dbConfig");
+    if(saved){
+        try{
+            const config = JSON.parse(saved);
+            document.getElementById("dbType").value = config.type || "mysql";
+            document.getElementById("dbHost").value = config.host || "";
+            document.getElementById("dbPort").value = config.port || "";
+            document.getElementById("dbUser").value = config.user || "";
+            document.getElementById("dbName").value = config.database || "";
+            if(config.remember){
+                document.getElementById("dbRemember").checked = true;
+            }
+        }catch(e){}
+    }
+}
+
+async function analyzeSQL(){
+    formatSQL();
+    const sql = document.getElementById("input").value.trim();
+    if(!sql){
+        showToast("请输入SQL语句", true);
+        return;
+    }
+    
+    const errors = validateSQL(sql);
+    if(errors.length > 0){
+        const panel = document.getElementById("analyzePanel");
+        const content = document.getElementById("analyzeContent");
+        panel.classList.add("show");
+        content.innerHTML = `<div class="suggestion-summary">
+            <div class="summary-title">⚠️ SQL 语法错误 (${errors.length}条)</div>
+            <div class="summary-list">
+                ${errors.map(e => `<div class="summary-item error">
+                    <div class="summary-header">🔴 语法错误</div>
+                    <div class="summary-msg">${e}</div>
+                </div>`).join('')}
+            </div>
+        </div>`;
+        panel.scrollIntoView({behavior: "smooth"});
+        return;
+    }
+    
+    if(!dbConnection){
+        showDbModal();
+        showToast("请先连接数据库", true);
+        return;
+    }
+    
+    try{
+        const res = await fetch(`${API_BASE}/analyze`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                connectionId: dbConnection.connectionId,
+                database: dbConnection.config.database,
+                sql: sql
+            })
+        });
+        const data = await res.json();
+        showAnalyzeResult(data);
+    }catch(e){
+        showToast("分析失败: " + e.message, true);
+    }
+}
+
+function showAnalyzeResult(data){
+    const panel = document.getElementById("analyzePanel");
+    const content = document.getElementById("analyzeContent");
+    panel.classList.add("show");
+    
+    if(!data.success){
+        content.innerHTML = `<div class="suggestion-item error"><div class="suggestion-title">分析失败</div><div class="suggestion-message">${data.error}</div></div>`;
+        return;
+    }
+    
+    let html = "";
+    
+    if(data.suggestions && data.suggestions.length > 0){
+        const priorityOrder = ['error', 'warning', 'suggestion', 'info', 'success'];
+        const sorted = [...data.suggestions].sort((a, b) => {
+            const pa = priorityOrder.indexOf(a.type);
+            const pb = priorityOrder.indexOf(b.type);
+            return pa - pb;
+        });
+        
+        html += `<div class="suggestion-summary">
+            <div class="summary-title">📋 优化建议 (${sorted.length}条)</div>
+            <div class="summary-list">`;
+        sorted.forEach(s => {
+            const icon = s.type === 'error' ? '🔴' : s.type === 'warning' ? '🟡' : s.type === 'suggestion' ? '🟣' : s.type === 'success' ? '🟢' : '🔵';
+            html += `<div class="summary-item ${s.type}">
+                <div class="summary-header">${icon} ${s.title}</div>
+                <div class="summary-msg">${s.message}</div>
+                ${s.suggestion ? `<div class="summary-action">💡 建议: ${s.suggestion}</div>` : ''}
+            </div>`;
+        });
+        html += `</div></div>`;
+    }
+    
+    html += `<div class="detail-section">
+        <div class="detail-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+            📊 执行计划 (点击展开/收起)
+        </div>
+        <div class="detail-content hidden">`;
+    
+    if(data.explainResult && data.explainResult.length > 0){
+        const firstRow = data.explainResult[0];
+        html += `<div class="explain-summary">`;
+        if(data.dbType === 'mysql'){
+            html += `<span class="badge ${firstRow.type === 'ALL' ? 'badge-danger' : 'badge-success'}">${firstRow.type === 'ALL' ? '全表扫描' : '索引扫描'}</span>`;
+            html += `<span>扫描行数: ${firstRow.rows || '未知'}</span>`;
+            html += `<span>使用索引: ${firstRow.key || '无'}</span>`;
+        }else{
+            const planStr = JSON.stringify(firstRow);
+            html += `<span class="badge ${planStr.includes('Seq Scan') ? 'badge-danger' : 'badge-success'}">${planStr.includes('Seq Scan') ? '顺序扫描' : '索引扫描'}</span>`;
+        }
+        html += `</div><pre class="explain-json">${JSON.stringify(data.explainResult, null, 2)}</pre>`;
+    }else{
+        html += `<div class="no-data">无法获取执行计划</div>`;
+    }
+    html += `</div></div>`;
+    
+    html += `<div class="detail-section">
+        <div class="detail-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+            🔑 现有索引 (点击展开/收起)
+        </div>
+        <div class="detail-content hidden">`;
+    
+    if(data.indexInfo && data.indexInfo.length > 0){
+        const indexGroups = {};
+        data.indexInfo.forEach(idx => {
+            const name = idx.Key_name || idx.indexname || '索引';
+            const col = idx.Column_name || idx.indexdef?.match(/\((.*?)\)/)?.[1] || '未知';
+            if(!indexGroups[name]) indexGroups[name] = [];
+            indexGroups[name].push(col);
+        });
+        html += `<div class="index-grid">`;
+        Object.entries(indexGroups).forEach(([name, cols]) => {
+            html += `<div class="index-card"><span class="index-name">${name}</span><span class="index-cols">${cols.join(', ')}</span></div>`;
+        });
+        html += `</div>`;
+    }else{
+        html += `<div class="no-data">未检测到索引</div>`;
+    }
+    html += `</div></div>`;
+    
+    content.innerHTML = html;
+    panel.scrollIntoView({behavior: "smooth"});
+}
+
+document.addEventListener("keydown", e => {
+    if(e.ctrlKey && e.key === "Enter"){
+        e.preventDefault();
+        formatSQL();
+    }
+    if(e.ctrlKey && e.shiftKey && e.key === "C"){
+        e.preventDefault();
+        copyResult();
+    }
+    if(e.ctrlKey && e.shiftKey && e.key === "A"){
+        e.preventDefault();
+        analyzeSQL();
+    }
+});
 </script>
 </body>
 </html>
